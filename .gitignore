@@ -8,3 +8,5 @@ pkudsa.tetris/
 # venv environment
 venv/
 
+# vscode environment
+.vscode/
