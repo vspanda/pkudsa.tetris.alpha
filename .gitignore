@@ -1,0 +1,10 @@
+# Gitignore for PKUDSA Tetris Alpha Team 2022
+# Version: 1.0
+
+
+# Main pkudsa.tetris program
+pkudsa.tetris/
+
+# venv environment
+venv/
+
