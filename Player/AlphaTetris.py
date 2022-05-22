@@ -27,16 +27,20 @@ class Player:
         self.initialized = False
 
         self.blocks = None
-        self.blockNum = None
-
-    def linesFull(self, board):
-        f = 0
-        for line in board:
-            if 0 not in line:
-                f += 1
-        return f   
+        self.blockNum = None   
 
     def output(self, matchData):
+        
+        def copyBoard(board):
+            return list(map(list, board))
+
+        def linesFull(board):
+            f = 0
+            for line in board:
+                if 0 not in line:
+                    f += 1
+            return f   
+
         if not self.initialized:
             self.blocks = list(matchData.getBlockList())
             self.blockNum = 1 if self.isFirst else 2
@@ -49,9 +53,10 @@ class Player:
 
         scores = []
         for move in validMoves:
-            testBoard = board[:]
+            testBoard = copyBoard(board)
             matchData.putBlock(block, move, testBoard)
-            scores.append(self.linesFull(testBoard))
+            scores.append(linesFull(testBoard))
 
         self.blockNum += 2
         return validMoves[max(scores)]
+
