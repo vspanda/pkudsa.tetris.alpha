@@ -1,2 +1,2 @@
 # Team ALPHA for pkudsa.tetris 2022
-# startdate: 2022.5.22
+Start Date: 2022.5.22
