@@ -2,7 +2,7 @@ class Player:
     def __init__(self, isFirst):
         self.isFirst = isFirst
 
-        self.comp = min if isFirst else max
+        self.comp = max
         
         self.initialized = False
 
