@@ -13,7 +13,7 @@ Allowed Libraries:
 - operator
 - numpy
 
-Time Limit: 9999
+Time Limit: 9999 （总共用时）
 
 First Thoughts: just put piece in lowest place possible
 
@@ -107,14 +107,18 @@ class Player:
 
             # Can use Numpy to reimplement
             matchData.putBlock(block, move, testBoard)
+
+            # 这些儿让调试组去调吧
             scores.append(
                 0
                 + 750 * linesFull(testBoard)
                 - 300 * holesFound(testBoard)
                 - 500 * aggregateHeight(testBoard)
                 - 200 * bumpiness(testBoard)
-                - 300 * villainScore(testBoard)
+                # - 300 * villainScore(testBoard)
             )
+        # 算对面能否拿分
+        
         self.blockNum += 2
         if validMoves == []:
             return (0, 0, 0)
