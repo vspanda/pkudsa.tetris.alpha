@@ -10,3 +10,4 @@ venv/
 
 # vscode environment
 .vscode/
+.DS_Store
