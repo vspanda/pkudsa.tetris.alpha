@@ -26,6 +26,9 @@ TODO:
     - Save Decision Paths?
 
 OPTIONAL TODO:
+- Find way to improve winChance of going second
+    - Currently around 9% (n = 100) against self
+    - 48% (n = 100) against pickFirst
 - Board redone with numpy
 """
 
