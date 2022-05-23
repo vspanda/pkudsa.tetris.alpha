@@ -120,6 +120,7 @@ class Player:
         # 算对面能否拿分
         
         self.blockNum += 2
-        if validMoves == []:
-            return (0, 0, 0)
-        return validMoves[scores.index(max(scores))]
+        idx = 0
+        if scores != []:
+            idx = scores.index(max(scores))
+        return validMoves[idx]
