@@ -16,6 +16,17 @@ Allowed Libraries:
 Time Limit: 9999
 
 First Thoughts: just put piece in lowest place possible
+
+TODO:
+- Finish bumpiness
+- Finish Holes
+- Finish Bumpiness
+- Finish VillainScore
+- Make decision Tree
+    - Save Decision Paths?
+
+OPTIONAL TODO:
+- Board redone with numpy
 """
 
 
