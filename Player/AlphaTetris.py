@@ -45,7 +45,8 @@ class Player:
         self.initialized = False
         self.blocks = None
         self.blockNum = None
-        self.colRange = range(15) if isFirst else range(24, 9, -1)
+        self.colRange = range(15)
+        self.currentHoles = 0
 
     def output(self, matchData):
         # Redo Board with NUMPY
@@ -55,7 +56,10 @@ class Player:
             self.initialized = True
 
         def copyBoard(board):
-            return list(map(list, board))
+            if self.isFirst:
+                return list(map(list, board))
+            if not self.isFirst:
+                return [j[::-1] for j in reversed(board)]
 
         def linesFull(board):
             full = 0
@@ -70,33 +74,29 @@ class Player:
                 hole = 0
                 head = False
                 for i in self.colRange:
-                    if board[i][col]:
+                    if board[i][col] == 1:
                         head = True
-                    if head and not board[i][col]:
+                    elif head and board[i][col] == 0:
                         hole += 1
+                    else:
                         head = False
                 return hole
 
             return sum([checkColForHoles(i) for i in range(10)])
 
         def getColumnHeights(board) -> list:
-            getHeight = lambda x: x - 15 if self.isFirst else 10 - x
-
             def getColumnHeight(col):
                 for i in self.colRange:
                     if board[i][col]:
-                        return getHeight(i)
+                        return 15 - i
                 return 0
         
             return [getColumnHeight(i) for i in range(10)]
 
-        def aggregateHeight(columnHeights):
-            return sum(columnHeights)
-
         def bumpiness(ch):
             bumpiness = 0
 
-            for i in range(len(ch - 1)):
+            for i in range(len(ch) - 1):
                 bumpiness += abs(ch[i] - ch[i + 1])
             return bumpiness
 
@@ -104,13 +104,14 @@ class Player:
             vScore = 0
             return vScore
 
-        board = matchData.getBoard()
         if self.blockNum < len(self.blocks):
             block = self.blocks[self.blockNum]
 
+        board = matchData.getBoard()
         validMoves = matchData.getAllValidAction(block, board)
 
         scores = []
+        holes = []
         for move in validMoves:
             testBoard = copyBoard(board)
 
@@ -121,15 +122,27 @@ class Player:
             # 这些儿让调试组去调吧
             scores.append(
                 0
-                + 750 * linesFull(testBoard)
-                - 300 * holesFound(testBoard)
-                - 600 * aggregateHeight(columnHeights)
-                - 150 * bumpiness(columnHeights)
-                - 900 * villainScore(testBoard)
+                + 850 * linesFull(testBoard)
+                - 900 * (holesFound(testBoard) - self.currentHoles)
+                - 650 * sum(columnHeights)
+                - 100 * bumpiness(columnHeights)
+                - 300 * villainScore(testBoard)
             )
+            holes.append(holesFound(testBoard))
         
         self.blockNum += 2
         idx = 0
         if scores != []:
             idx = scores.index(max(scores))
+            self.currentHoles = holes[idx]
+
+            if 0:
+                print()
+                print(validMoves)
+                # print("Heights", heights)
+                print("Holes", holes)
+                print(f"New Holes: ", self.currentHoles, holes[idx])
+                print(idx, validMoves[idx])
+                print("Chosen Holes: ", holes[idx])
+                # print("Chosen Height: ", heights[idx])
         return validMoves[idx]
