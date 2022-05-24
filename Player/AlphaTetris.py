@@ -23,6 +23,7 @@ TODO
     - Save Decision Paths?
 - Be Conscious of Time
 - Combine Scoring to be more efficient?
+    - Scoring Graph? Save Heuristics instead of scores?
 - Enemy Repeated Moves?
 
 OPTIONAL TODO:
