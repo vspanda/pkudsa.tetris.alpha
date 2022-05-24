@@ -17,19 +17,20 @@ Time Limit: 9999 （总共用时）
 
 First Thoughts: just put piece in lowest place possible
 
-TODO:
-- Finish bumpiness
-- Finish Holes
-- Finish Bumpiness
+TODO
 - Finish VillainScore
+    - Enemy Repeated Moves
 - Make decision Tree
     - Save Decision Paths?
+- Be Conscious of Time
+- Combine Scoring to be more efficient?
 
 OPTIONAL TODO:
 - Find way to improve winChance of going second
     - Currently around 9% (n = 100) against self
     - 48% (n = 100) against pickFirst
 - Board redone with numpy
+- Redo Functions with Numpy if they need to be faster
 """
 
 
@@ -54,16 +55,42 @@ class Player:
         def linesFull(board):
             full = 0
             for line in board:
-                if 0 not in line:
-                    full += 1
+                if 0 in line:
+                    continue
+                full += 1
             return full
 
         def holesFound(board):
+            if self.isFirst:
+                base = 15
+                colRange = range(15)
+                getHeight = lambda x: base - x
+                pass
+            else:
+                base = 10
+                colRange = range(24, 9, -1)
+                getHeight = lambda x: x - base
+                pass
+
+            def checkColForHoles(col):
+                hole = 0
+                head = False
+                for i in colRange:
+                    if board[i][col]:
+                        head = True
+                    if head and not board[i][col]:
+                        hole += 1
+                        head = False
+                return hole
+
+
             holes = 0
+            for i in range(10):
+                holes += checkColForHoles(i)
 
             return holes
 
-        def aggregateHeight(board):
+        def getColumnHeights(board) -> list:
             if self.isFirst:
                 base = 15
                 colRange = range(15)
@@ -80,15 +107,22 @@ class Player:
                     if board[i][col]:
                         return getHeight(i)
                 return 0
+            heights = []
 
-            height = 0
             for i in range(10):
-                height += getColumnHeight(i)
+                heights.append(getColumnHeight(i))
+            
+            return heights
 
-            return height
+        def aggregateHeight(columnHeights):
+            return sum(columnHeights)
 
-        def bumpiness(board):
+        def bumpiness(ch):
             bumpiness = 0
+
+            for i in range(len(ch - 1)):
+                bumpiness += abs(ch[i] - ch[i + 1])
+
             return bumpiness
 
         def villainScore(board):
@@ -107,17 +141,17 @@ class Player:
 
             # Can use Numpy to reimplement
             matchData.putBlock(block, move, testBoard)
+            columnHeights = getColumnHeights(testBoard)
 
             # 这些儿让调试组去调吧
             scores.append(
                 0
                 + 750 * linesFull(testBoard)
                 - 300 * holesFound(testBoard)
-                - 500 * aggregateHeight(testBoard)
-                - 200 * bumpiness(testBoard)
-                # - 300 * villainScore(testBoard)
+                - 500 * aggregateHeight(columnHeights)
+                - 150 * bumpiness(columnHeights)
+                - 900 * villainScore(testBoard)
             )
-        # 算对面能否拿分
         
         self.blockNum += 2
         idx = 0
