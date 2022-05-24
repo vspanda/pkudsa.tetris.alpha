@@ -18,6 +18,7 @@ Time Limit: 9999 （总共用时）
 First Thoughts: just put piece in lowest place possible
 
 TODO
+- IMPORTANT: Fix Team 2 Scoring -> It's off
 - Finish VillainScore
     - Enemy Repeated Moves
 - Make decision Tree
@@ -41,6 +42,7 @@ class Player:
         self.initialized = False
         self.blocks = None
         self.blockNum = None
+        self.colRange = range(15) if isFirst else range(24, 9, -1)
 
     def output(self, matchData):
         # Redo Board with NUMPY
@@ -61,28 +63,16 @@ class Player:
             return full
 
         def holesFound(board):
-            if self.isFirst:
-                base = 15
-                colRange = range(15)
-                getHeight = lambda x: base - x
-                pass
-            else:
-                base = 10
-                colRange = range(24, 9, -1)
-                getHeight = lambda x: x - base
-                pass
-
             def checkColForHoles(col):
                 hole = 0
                 head = False
-                for i in colRange:
+                for i in self.colRange:
                     if board[i][col]:
                         head = True
                     if head and not board[i][col]:
                         hole += 1
                         head = False
                 return hole
-
 
             holes = 0
             for i in range(10):
@@ -92,18 +82,12 @@ class Player:
 
         def getColumnHeights(board) -> list:
             if self.isFirst:
-                base = 15
-                colRange = range(15)
-                getHeight = lambda x: base - x
-                pass
+                getHeight = lambda x: 15 - x
             else:
-                base = 10
-                colRange = range(24, 9, -1)
-                getHeight = lambda x: x - base
-                pass
+                getHeight = lambda x: x - 10
 
             def getColumnHeight(col):
-                for i in colRange:
+                for i in self.colRange:
                     if board[i][col]:
                         return getHeight(i)
                 return 0
@@ -149,7 +133,7 @@ class Player:
                 + 750 * linesFull(testBoard)
                 - 300 * holesFound(testBoard)
                 - 500 * aggregateHeight(columnHeights)
-                - 150 * bumpiness(columnHeights)
+                - 200 * bumpiness(columnHeights)
                 - 900 * villainScore(testBoard)
             )
         
