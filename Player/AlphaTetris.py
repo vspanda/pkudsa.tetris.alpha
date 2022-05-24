@@ -18,7 +18,10 @@ Time Limit: 9999 （总共用时）
 First Thoughts: just put piece in lowest place possible
 
 TODO
-- IMPORTANT: Fix Team 2 Scoring -> It's off
+- IMPORTANT:
+    - Height wrong for Team 2
+    - Holes wrong for Team 2
+
 - Finish VillainScore
     - Enemy Repeated Moves
 - Make decision Tree
@@ -74,29 +77,18 @@ class Player:
                         head = False
                 return hole
 
-            holes = 0
-            for i in range(10):
-                holes += checkColForHoles(i)
-
-            return holes
+            return sum([checkColForHoles(i) for i in range(10)])
 
         def getColumnHeights(board) -> list:
-            if self.isFirst:
-                getHeight = lambda x: 15 - x
-            else:
-                getHeight = lambda x: x - 10
+            getHeight = lambda x: x - 15 if self.isFirst else 10 - x
 
             def getColumnHeight(col):
                 for i in self.colRange:
                     if board[i][col]:
                         return getHeight(i)
                 return 0
-            heights = []
-
-            for i in range(10):
-                heights.append(getColumnHeight(i))
-            
-            return heights
+        
+            return [getColumnHeight(i) for i in range(10)]
 
         def aggregateHeight(columnHeights):
             return sum(columnHeights)
@@ -106,7 +98,6 @@ class Player:
 
             for i in range(len(ch - 1)):
                 bumpiness += abs(ch[i] - ch[i + 1])
-
             return bumpiness
 
         def villainScore(board):
@@ -132,8 +123,8 @@ class Player:
                 0
                 + 750 * linesFull(testBoard)
                 - 300 * holesFound(testBoard)
-                - 500 * aggregateHeight(columnHeights)
-                - 200 * bumpiness(columnHeights)
+                - 600 * aggregateHeight(columnHeights)
+                - 150 * bumpiness(columnHeights)
                 - 900 * villainScore(testBoard)
             )
         
