@@ -18,16 +18,12 @@ Time Limit: 9999 （总共用时）
 First Thoughts: just put piece in lowest place possible
 
 TODO
-- IMPORTANT:
-    - Height wrong for Team 2
-    - Holes wrong for Team 2
-
-- Finish VillainScore
-    - Enemy Repeated Moves
+- Change Hole to 4 Sides
 - Make decision Tree
     - Save Decision Paths?
 - Be Conscious of Time
 - Combine Scoring to be more efficient?
+- Enemy Repeated Moves?
 
 OPTIONAL TODO:
 - Find way to improve winChance of going second
@@ -101,8 +97,21 @@ class Player:
             return bumpiness
 
         def villainScore(board):
-            vScore = 0
-            return vScore
+            vScore = []
+            if self.blockNum + 1 < len(self.blocks):
+                vblock = self.blocks[self.blockNum + 1]
+            vBoard = copyBoard(board)
+            vMoves = matchData.getAllValidAction(vblock, vBoard)
+            
+            for vmove in vMoves:
+                vboard = vBoard
+                matchData.putBlock(vblock, vmove, vboard)
+
+                vScore.append(linesFull(vboard))
+
+            if vScore == []:
+                return 0
+            return max(vScore)
 
         if self.blockNum < len(self.blocks):
             block = self.blocks[self.blockNum]
