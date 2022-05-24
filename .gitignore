@@ -8,6 +8,9 @@ pkudsa.tetris/
 # venv environment
 venv/
 
-# vscode environment
+# Environment Files
 .vscode/
 .DS_Store
+
+# Extra Files
+testing/
