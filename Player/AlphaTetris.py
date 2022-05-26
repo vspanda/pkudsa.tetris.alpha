@@ -36,6 +36,39 @@ OPTIONAL TODO:
 
 
 class Player:
+    class DecisionNode:
+        def __init__(self, board, move) -> None:
+            self.board = board
+            self.move = move
+
+            self.parent = None
+            self.children = []
+
+            self.totalScore = 0
+
+            self.score = 0
+            self.holes = 0
+            self.bump = 0
+            self.height = 0
+
+
+
+            self.move = None
+        
+        
+            
+        
+        
+
+
+
+
+
+    class AlphaTetris:
+        def __init__(self) -> None:
+            # 
+            self.path = []
+    
     def __init__(self, isFirst):
         self.isFirst = isFirst
 
@@ -58,26 +91,42 @@ class Player:
             if not self.isFirst:
                 return [j[::-1] for j in reversed(board)]
 
-        def linesFull(board):
+        # Points Scored
+        def linesFull(board, enemy = False):
+            score1 = 0
+            if not enemy:
+                full = 0
+                for line in range(10):
+                    if 0 in board[line]:
+                        continue
+                    full += 1
+                score1 = 2 ** (full - 2)
+
             full = 0
-            for line in board:
-                if 0 in line:
+            for line in range(10, 15):
+                if 0 in board[line]:
                     continue
                 full += 1
-            return full
+            score2 = 2 ** (full - 1)
+
+            return score1 + score2
 
         def holesFound(board):
             def checkColForHoles(col):
-                hole = 0
+                holes = []
                 head = False
                 for i in self.colRange:
-                    if board[i][col] == 1:
-                        head = True
-                    elif head and board[i][col] == 0:
-                        hole += 1
-                    else:
-                        head = False
-                return hole
+                    if board[i][col] == 0:
+                        if board[i - 1][col] == 1:
+                            head = True
+                        if head:
+                            # keep hole (x, y) coord
+                            holes.append((i, col))
+                # for each hole, check if true hole or false hole
+                for hole in holes:
+                    hole[0], hole[1] # (x, y)
+
+                return holes
 
             return sum([checkColForHoles(i) for i in range(10)])
 
@@ -86,8 +135,7 @@ class Player:
                 for i in self.colRange:
                     if board[i][col]:
                         return 15 - i
-                return 0
-        
+                return 0        
             return [getColumnHeight(i) for i in range(10)]
 
         def bumpiness(ch):
