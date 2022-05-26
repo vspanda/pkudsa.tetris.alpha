@@ -34,26 +34,83 @@ OPTIONAL TODO:
 - Redo Functions with Numpy if they need to be faster
 """
 
+def copyBoard(board, first):
+    if first:
+        return list(map(list, board))
+    if not first:
+        return [j[::-1] for j in reversed(board)]
 
 class Player:
     class DecisionNode:
-        def __init__(self, board, move) -> None:
-            self.board = board
+        def __init__(self, block, board, move, md) -> None:
             self.move = move
 
-            self.parent = None
             self.children = []
-
             self.totalScore = 0
 
-            self.score = 0
-            self.holes = 0
-            self.bump = 0
-            self.height = 0
+            colRange = range(15)
+            # Points Scored
+            def possibleScore(board, enemy = False):
+                score = 0
+                if not enemy:
+                    full = 0
+                    for line in range(10):
+                        if 0 in board[line]:
+                            continue
+                        full += 1
+                    score += 2 ** (full - 2)
 
+                full = 0
+                for line in range(10, 15):
+                    if 0 in board[line]:
+                        continue
+                    full += 1
+                score += 2 ** (full - 1)
 
+                return score
 
-            self.move = None
+            def holesFound(board):
+                def checkColForHoles(col):
+                    holes = []
+                    head = False
+                    for i in colRange:
+                        if board[i][col] == 0:
+                            if board[i - 1][col] == 1:
+                                head = True
+                            if head:
+                                # keep hole (x, y) coord
+                                holes.append((i, col))
+                    # for each hole, check if true hole or false hole
+                    for hole in holes:
+                        hole[0], hole[1] # (x, y)
+
+                    return holes
+
+                return sum([checkColForHoles(i) for i in range(10)])
+
+            def getColumnHeights(board) -> list:
+                def getColumnHeight(col):
+                    for i in colRange:
+                        if board[i][col]:
+                            return 15 - i
+                    return 0        
+                return [getColumnHeight(i) for i in range(10)]
+
+            def bumpiness(ch):
+                bumpiness = 0
+
+                for i in range(len(ch) - 1):
+                    bumpiness += abs(ch[i] - ch[i + 1])
+                return bumpiness
+            
+            md.putBlock(block, board)
+
+            ch = getColumnHeights(board)
+            self.score = possibleScore(board)
+            self.holes = holesFound(board)
+            self.bump = bumpiness(ch)
+            self.height = sum(ch)           
+
         
         
             
@@ -63,11 +120,31 @@ class Player:
 
 
 
-
     class AlphaTetris:
-        def __init__(self) -> None:
-            # 
-            self.path = []
+        def __init__(self, isFirst) -> None:
+            self.savedpaths = []
+            
+            self.isFirst = isFirst
+
+            self.md = None
+            self.blockList = None
+            self.blockNum = None
+        
+        # Setups the Decision Tree
+        def setup(self):
+            self.blockList = list(self.md.getBlockList())
+            self.blockNum = 1 if self.isFirst else 2
+        
+        # Updates the Decision Tree - Call every Turn
+        def update(self, md):
+            self.md = md
+
+        
+        
+        
+        def newMove(self, board):
+            test = self.copyBoard(board, self.isFirst)
+
     
     def __init__(self, isFirst):
         self.isFirst = isFirst
