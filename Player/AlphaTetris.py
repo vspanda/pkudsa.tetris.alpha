@@ -40,112 +40,203 @@ def copyBoard(board, first):
     if not first:
         return [j[::-1] for j in reversed(board)]
 
-class Player:
-    class DecisionNode:
-        def __init__(self, block, board, move, md) -> None:
-            self.move = move
+class AlphaNode:
+    def __init__(self, block, board, move, md, isEnemy) -> None:
+        self.move = move
+        self.md = md
+        self.board = board
+        self.block = block
+        self.isEnemy = isEnemy
+        
+        self.paths = {}
 
-            self.children = []
-            self.totalScore = 0
+        # Total Score is negative for Enemy, 
+        # positive for us
+        # Still need to decide how it's calculated.
+        self.totalScore = 0
 
-            colRange = range(15)
-            # Points Scored
-            def possibleScore(board, enemy = False):
-                score = 0
-                if not enemy:
-                    full = 0
-                    for line in range(10):
-                        if 0 in board[line]:
-                            continue
-                        full += 1
-                    score += 2 ** (full - 2)
+        self.getScoring()
 
+
+    def getScoring(self):
+        colRange = range(15)
+        def possibleScore(board, enemy = False):
+            score = 0
+            if not enemy:
                 full = 0
-                for line in range(10, 15):
+                for line in range(10):
                     if 0 in board[line]:
                         continue
                     full += 1
-                score += 2 ** (full - 1)
+                score += 2 ** (full - 2)
 
-                return score
-
-            def holesFound(board):
-                def checkColForHoles(col):
-                    holes = []
-                    head = False
-                    for i in colRange:
-                        if board[i][col] == 0:
-                            if board[i - 1][col] == 1:
-                                head = True
-                            if head:
-                                # keep hole (x, y) coord
-                                holes.append((i, col))
-                    # for each hole, check if true hole or false hole
-                    for hole in holes:
-                        hole[0], hole[1] # (x, y)
-
-                    return holes
-
-                return sum([checkColForHoles(i) for i in range(10)])
-
-            def getColumnHeights(board) -> list:
-                def getColumnHeight(col):
-                    for i in colRange:
-                        if board[i][col]:
-                            return 15 - i
-                    return 0        
-                return [getColumnHeight(i) for i in range(10)]
-
-            def bumpiness(ch):
-                bumpiness = 0
-
-                for i in range(len(ch) - 1):
-                    bumpiness += abs(ch[i] - ch[i + 1])
-                return bumpiness
-            
-            md.putBlock(block, board)
-
-            ch = getColumnHeights(board)
-            self.score = possibleScore(board)
-            self.holes = holesFound(board)
-            self.bump = bumpiness(ch)
-            self.height = sum(ch)           
-
+            full = 0
+            for line in range(10, 15):
+                if 0 in board[line]:
+                    continue
+                full += 1
+            score += 2 ** (full - 1)
+            return score
+        def holesFound(board):
+            def checkColForHoles(col):
+                holes = []
+                head = False
+                for i in colRange:
+                    if board[i][col] == 0:
+                        if board[i - 1][col] == 1:
+                            head = True
+                        if head:
+                            # keep hole (x, y) coord
+                            holes.append((i, col))
+                return sum([1 for _ in holes])
+            return sum([checkColForHoles(i) for i in range(10)])
+        def getColumnHeights(board) -> list:
+            def getColumnHeight(col):
+                for i in colRange:
+                    if board[i][col]:
+                        return 15 - i
+                return 0        
+            return [getColumnHeight(i) for i in range(10)]
+        def bumpiness(ch):
+            bumpiness = 0
+            for i in range(len(ch) - 1):
+                bumpiness += abs(ch[i] - ch[i + 1])
+            return bumpiness
         
+        self.md.putBlock(self.block, self.move, self.board)
+
+        ch = getColumnHeights(self.board)
         
-            
+        self.score = possibleScore(self.board)
         
+        if self.isEnemy and self.score < 1:
+            return 0
         
+        self.holes = holesFound(self.board)
+        self.bump = bumpiness(ch)
+        self.height = sum(ch)
+
+        # Calculate Total Score
+        totalScore = 0
+        totalScore += self.score   * 1000
+
+        # Might Not have totalScore, instead just have Score
+        # and use __lt__(self, other) to determine instead.
+        # Will see.
+        totalScore -= self.holes   * 100
+        totalScore -= self.bump    * 100
+        totalScore -= self.height  * 100
+
+        self.totalScore = totalScore
 
 
+    # recurses through all children to get max score
+    def getFinalScore(self):
+        current = self.paths
+        while current != []:
+            maxChild: self = max(current)
+            if maxChild.isEnemy:
+                self.totalScore -= maxChild.totalScore
+            else:
+                self.totalScore += maxChild.totalScore
+            current = maxChild.children
+    
+    def addChild(self, child):
+        self.paths[child.move] = child
+
+    def getMove(self):
+        return self.move
 
 
-    class AlphaTetris:
-        def __init__(self, isFirst) -> None:
-            self.savedpaths = []
-            
-            self.isFirst = isFirst
+    # Used to Sort Scores
+    def __lt__(self, other):
+        # TEMPORARY - SUBJECT TO CHANGE
+        return self.totalScore < other.totalScore
 
-            self.md = None
-            self.blockList = None
-            self.blockNum = None
-        
-        # Setups the Decision Tree
-        def setup(self):
-            self.blockList = list(self.md.getBlockList())
-            self.blockNum = 1 if self.isFirst else 2
-        
-        # Updates the Decision Tree - Call every Turn
-        def update(self, md):
-            self.md = md
 
+class AlphaTetris:
+    def __init__(self, isFirst, depth) -> None:
+        # Key: move: (int, int, int)
+        # Val: data: AlphaNode
+        self.savedpaths = {}
+
+        self.root = None
         
-        
-        
-        def newMove(self, board):
-            test = self.copyBoard(board, self.isFirst)
+        self.isFirst = isFirst
+        self.md = None
+        self.blockList = None
+        self.blockNum = None
+
+        self.runDepth = depth
+        self.possibleMoves = []
 
     
+    # Setups the Decision Tree
+    def setup(self, md):
+        self.md = md
+        self.blockList = list(self.md.getBlockList())
+        self.blockNum = 1 if self.isFirst else 2
+    
+    # Should be able to run recursively with depth and lastMove
+    # Calculates all the moves in the currently available moveset
+    # Need to check what happens when enemy moveset is empty -> Need to keep checking our moveset
+    # So should just ignore enemy move
+    def calculate(self, isEnemy: bool, lastMove: AlphaNode, depth: int):
+        if self.blockNum + depth > len(self.blockList):
+            return
+        block = self.blockList[self.blockNum + depth]
+
+        if lastMove is not None and depth > 0:
+            board = lastMove.board
+        else:
+            board = self.md.getBoard()
+
+        validMoves = self.md.getAllValidAction(block, board)
+
+        nextMoves = []
+        for move in validMoves:
+            print(isEnemy)
+            if isEnemy and move[0] < (8 if block == 1 else 9):
+                continue
+            
+            tempBoard = copyBoard(board, self.isFirst ^ isEnemy)
+            print(tempBoard)        
+            nextMoves.append(AlphaNode(block, tempBoard, move, self.md, isEnemy))
+        
+        return nextMoves
+
+
+    # Updates the Decision Tree - Call every Turn
+    def update(self, md):
+        self.md = md
+        la = self.md.getLastAction()
+        if la[0] < 8 if self.blockList[self.blockNum - 1] == 1 else 9:
+
+            # get next move
+            return
+        if la in self.savedpaths:
+            self.calculate(False, self.savedpaths[la], self.runDepth - 2)
+            return
+
+    # Recurses through the next self.runDepth moves
+    def newMove(self):
+        for depth in range(self.runDepth):
+            # Set proper First Move
+            current = [None]
+            for move in current:
+                temp = self.calculate(depth % 2 != 0, move, depth)
+                for i in temp:
+                    if move is not None:
+                        move.addChild(i)
+            if depth == 0:
+                self.possibleMoves = temp
+            current = temp
+
+        for move in self.possibleMoves:
+            move.getFinalScore()
+
+
+class Player:
     def __init__(self, isFirst):
         self.isFirst = isFirst
 
@@ -155,129 +246,18 @@ class Player:
         self.colRange = range(15)
         self.currentHoles = 0
 
+        self.brain = AlphaTetris(self.isFirst, 6)
+
     def output(self, matchData):
         # Redo Board with NUMPY
         if not self.initialized:
+            self.brain.setup(matchData)
+
             self.blocks = list(matchData.getBlockList())
             self.blockNum = 1 if self.isFirst else 2
             self.initialized = True
 
-        def copyBoard(board):
-            if self.isFirst:
-                return list(map(list, board))
-            if not self.isFirst:
-                return [j[::-1] for j in reversed(board)]
-
-        # Points Scored
-        def linesFull(board, enemy = False):
-            score1 = 0
-            if not enemy:
-                full = 0
-                for line in range(10):
-                    if 0 in board[line]:
-                        continue
-                    full += 1
-                score1 = 2 ** (full - 2)
-
-            full = 0
-            for line in range(10, 15):
-                if 0 in board[line]:
-                    continue
-                full += 1
-            score2 = 2 ** (full - 1)
-
-            return score1 + score2
-
-        def holesFound(board):
-            def checkColForHoles(col):
-                holes = []
-                head = False
-                for i in self.colRange:
-                    if board[i][col] == 0:
-                        if board[i - 1][col] == 1:
-                            head = True
-                        if head:
-                            # keep hole (x, y) coord
-                            holes.append((i, col))
-                # for each hole, check if true hole or false hole
-                for hole in holes:
-                    hole[0], hole[1] # (x, y)
-
-                return holes
-
-            return sum([checkColForHoles(i) for i in range(10)])
-
-        def getColumnHeights(board) -> list:
-            def getColumnHeight(col):
-                for i in self.colRange:
-                    if board[i][col]:
-                        return 15 - i
-                return 0        
-            return [getColumnHeight(i) for i in range(10)]
-
-        def bumpiness(ch):
-            bumpiness = 0
-
-            for i in range(len(ch) - 1):
-                bumpiness += abs(ch[i] - ch[i + 1])
-            return bumpiness
-
-        def villainScore(board):
-            vScore = []
-            if self.blockNum + 1 < len(self.blocks):
-                vblock = self.blocks[self.blockNum + 1]
-            vBoard = copyBoard(board)
-            vMoves = matchData.getAllValidAction(vblock, vBoard)
-            
-            for vmove in vMoves:
-                vboard = vBoard
-                matchData.putBlock(vblock, vmove, vboard)
-
-                vScore.append(linesFull(vboard))
-
-            if vScore == []:
-                return 0
-            return max(vScore)
-
-        if self.blockNum < len(self.blocks):
-            block = self.blocks[self.blockNum]
-
-        board = matchData.getBoard()
-        validMoves = matchData.getAllValidAction(block, board)
-
-        scores = []
-        holes = []
-        for move in validMoves:
-            testBoard = copyBoard(board)
-
-            # Can use Numpy to reimplement
-            matchData.putBlock(block, move, testBoard)
-            columnHeights = getColumnHeights(testBoard)
-
-            # 这些儿让调试组去调吧
-            scores.append(
-                0
-                + 850 * linesFull(testBoard)
-                - 900 * (holesFound(testBoard) - self.currentHoles)
-                - 650 * sum(columnHeights)
-                - 100 * bumpiness(columnHeights)
-                - 300 * villainScore(testBoard)
-            )
-            holes.append(holesFound(testBoard))
+        self.brain.newMove()
         
-        self.blockNum += 2
-        idx = 0
-        if scores != []:
-            idx = scores.index(max(scores))
-            self.currentHoles = holes[idx]
 
-            if 0:
-                print()
-                print(validMoves)
-                # print("Heights", heights)
-                print("Holes", holes)
-                print(f"New Holes: ", self.currentHoles, holes[idx])
-                print(idx, validMoves[idx])
-                print("Chosen Holes: ", holes[idx])
-                # print("Chosen Height: ", heights[idx])
-        return validMoves[idx]
+        return (0, 0, 0)
