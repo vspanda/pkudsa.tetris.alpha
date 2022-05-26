@@ -80,7 +80,7 @@ class Player:
             vMoves = matchData.getAllValidAction(vblock, vBoard)
 
             for vmove in vMoves:
-                if vmove[0] < 8 if vblock == 1 else 9:
+                if vmove[0] < (8 if vblock == 1 else 9):
                     continue
 
                 vboard = vBoard
