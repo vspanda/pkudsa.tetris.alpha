@@ -1,39 +1,3 @@
-"""
-PKUDSA Tetris ALPHA Team AI
-2022.5.22
-
-Allowed Libraries:
-- math
-- random
-- copy
-- time
-- collections
-- itertools
-- functools
-- operator
-- numpy
-
-Time Limit: 9999 （总共用时）
-
-First Thoughts: just put piece in lowest place possible
-
-TODO
-- Change Hole to 4 Sides
-- Make decision Tree
-    - Save Decision Paths?
-- Be Conscious of Time
-- Combine Scoring to be more efficient?
-    - Scoring Graph? Save Heuristics instead of scores?
-- Enemy Repeated Moves?
-
-OPTIONAL TODO:
-- Find way to improve winChance of going second
-    - Currently around 9% (n = 100) against self
-    - 48% (n = 100) against pickFirst
-- Board redone with numpy
-- Redo Functions with Numpy if they need to be faster
-"""
-
 def copyBoard(board, first):
     if first:
         return list(map(list, board))
@@ -41,7 +5,7 @@ def copyBoard(board, first):
         return [j[::-1] for j in reversed(board)]
 
 class AlphaNode:
-    def __init__(self, block, board, move, md, isEnemy) -> None:
+    def __init__(self, block, board, move, md, isEnemy, emptyNode=False) -> None:
         self.move = move
         self.md = md
         self.board = board
@@ -55,7 +19,8 @@ class AlphaNode:
         # Still need to decide how it's calculated.
         self.totalScore = 0
 
-        self.getScoring()
+        if not emptyNode:
+            self.getScoring()
 
 
     def getScoring(self):
@@ -133,13 +98,14 @@ class AlphaNode:
     # recurses through all children to get max score
     def getFinalScore(self):
         current = self.paths
-        while current != []:
-            maxChild: self = max(current)
+        while current != {}:
+            maxChild: self = max(current, key=lambda x: current[x])
+            maxChild = current[maxChild]
             if maxChild.isEnemy:
                 self.totalScore -= maxChild.totalScore
             else:
                 self.totalScore += maxChild.totalScore
-            current = maxChild.children
+            current = maxChild.paths
     
     def addChild(self, child):
         self.paths[child.move] = child
@@ -147,7 +113,11 @@ class AlphaNode:
     def getMove(self):
         return self.move
 
+    def __str__(self) -> str:
+        return f"AlphaNode<{self.move}, {self.totalScore}>"
 
+    def __repr__(self) -> str:
+        return str(self)
     # Used to Sort Scores
     def __lt__(self, other):
         # TEMPORARY - SUBJECT TO CHANGE
@@ -177,6 +147,7 @@ class AlphaTetris:
         self.blockList = list(self.md.getBlockList())
         self.blockNum = 1 if self.isFirst else 2
     
+    # TODO Fix Enemy Move checking
     # Should be able to run recursively with depth and lastMove
     # Calculates all the moves in the currently available moveset
     # Need to check what happens when enemy moveset is empty -> Need to keep checking our moveset
@@ -195,14 +166,15 @@ class AlphaTetris:
 
         nextMoves = []
         for move in validMoves:
-            print(isEnemy)
             if isEnemy and move[0] < (8 if block == 1 else 9):
                 continue
             
             tempBoard = copyBoard(board, self.isFirst ^ isEnemy)
-            print(tempBoard)        
             nextMoves.append(AlphaNode(block, tempBoard, move, self.md, isEnemy))
         
+        if nextMoves == []:
+            nextMoves.append(AlphaNode(block, tempBoard, move, self.md, isEnemy))
+
         return nextMoves
 
 
@@ -222,16 +194,17 @@ class AlphaTetris:
     def newMove(self):
         for depth in range(self.runDepth):
             # Set proper First Move
-            current = [None]
+            current = [AlphaNode(0, self.md.getBoard(), 0, 0, 0, emptyNode=True)]
             for move in current:
                 temp = self.calculate(depth % 2 != 0, move, depth)
-                for i in temp:
-                    if move is not None:
+                if move is not None:
+                    for i in temp:
                         move.addChild(i)
             if depth == 0:
                 self.possibleMoves = temp
             current = temp
 
+        print(self.possibleMoves)
         for move in self.possibleMoves:
             move.getFinalScore()
 
@@ -259,5 +232,6 @@ class Player:
 
         self.brain.newMove()
         
-
-        return (0, 0, 0)
+        move = max(self.brain.possibleMoves).move
+        print(move)
+        return move
