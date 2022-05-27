@@ -25,77 +25,107 @@ class AlphaNode:
         # positive for us
         # Still need to decide how it's calculated.
         self.totalScore = 0
-
         if not emptyNode:
             self.getScoring()
 
 
     def getScoring(self):
         colRange = range(15)
-        # def possibleScore(board, enemy = False):
-        #     score = 0
-        #     if not enemy:
-        #         full = 0
-        #         for line in range(10):
-        #             if 0 in board[line]:
-        #                 continue
-        #             full += 1
-        #         score += 2 ** (full - 2)
-
-        #     full = 0
-        #     for line in range(10, 15):
-        #         if 0 in board[line]:
-        #             continue
-        #         full += 1
-        #     score += 2 ** (full - 1)
-        #     return score
+        rowRange = range(10)
+        
+        def colTransitions(board):
+            transitions = 0
+            for j in rowRange:
+                lastPiece = board[0][j]
+                for i in range(1, 15):
+                    if board[i][j] != lastPiece:
+                        transitions += 1
+                        lastPiece = board[i][j]
+            return transitions
+        def rowTransitions(board):
+            transitions = 0
+            for j in colRange:
+                lastPiece = board[j][0]
+                for i in range(1, 10):
+                    if board[j][i] != lastPiece:
+                        transitions += 1
+                        lastPiece = board[j][i]
+            return transitions
         def holesFound(board):
-            def checkColForHoles(col):
-                holes = []
-                head = False
+            holes = 0
+            for j in rowRange:
+                cHole = None
                 for i in colRange:
-                    if board[i][col] == 0:
-                        if board[i - 1][col] == 1:
-                            head = True
-                        if head:
-                            # keep hole (x, y) coord
-                            holes.append((i, col))
-                return sum([1 for _ in holes])
-            return sum([checkColForHoles(i) for i in range(10)])
-        def getColumnHeights(board) -> list:
-            def getColumnHeight(col):
+                    if cHole is None and board[i][j] == 1:
+                        cHole = 0
+                    if cHole is not None and board[i][j] == 0:
+                        cHole += 1
+                if cHole is not None:
+                    holes += cHole
+            return holes
+        def boardWells(board):
+            SUM = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
+            ws = 0
+            for j in rowRange:
+                wells = 0
                 for i in colRange:
-                    if board[i][col]:
-                        return 15 - i
-                return 0        
-            return [getColumnHeight(i) for i in range(10)]
-        def bumpiness(ch):
-            bumpiness = 0
-            for i in range(len(ch) - 1):
-                bumpiness += abs(ch[i] - ch[i + 1])
-            return bumpiness
+                    try:
+                        if (j - 1 < 0 or board[i][j - 1] != 0) and (j + 1 >= 10 or board[i][j + 1] != 0):
+                            wells += 1
+                    except IndexError:
+                        print('h')
+                    else:
+                        ws += SUM[wells]
+                        wells = 0
+            return ws
         
         self.md.putBlock(self.block, self.move, self.board)
-        ch = getColumnHeights(self.board)
+        # ch = getColumnHeights(self.board)
         lines = self.md.removeLines(self.board)
         
         self.board = lines[0]
-        # self.score = 2 ** (lines[1] - 2) + 2 ** (lines[2] - 1)
-        self.score = lines[1] * 2 + lines[2]
-        self.holes = holesFound(self.board)
-        self.bump = bumpiness(ch)
-        self.height = sum(ch)
+        self.score = 2 ** (lines[1] - 2) + 2 ** (lines[2] - 1)
+        # self.score = lines[1] * 2 + lines[2]
 
-        # Calculate Total Score
-        totalScore = 0
-        totalScore += self.score   * 100000
+        self.rTran = rowTransitions(self.board)
+        self.cTran = colTransitions(self.board)
+        self.holes = holesFound(self.board)
+
+        self.wells = boardWells(self.board)
+
+
+        # self.bump = bumpiness(ch)
+        # self.height = sum(ch)
 
         # Might Not have totalScore, instead just have Score
         # and use __lt__(self, other) to determine instead.
         # Will see.
-        totalScore -= self.holes   * 300
-        totalScore -= self.bump    * 100
-        totalScore -= self.height  * 200
+        # Calculate Total Score
+        totalScore = 0
+
+
+
+        # Landing Height
+        totalScore -= self.move[0] * 45
+
+        # Removed Lines (NOT ERODED PIECES)
+        totalScore += self.score   * 34
+
+        # Row Transitions
+        totalScore -= self.rTran   * 32
+
+        # Col Transitions
+        totalScore -= self.cTran   * 93
+
+        # Buried Holes
+        totalScore -= self.holes   * 79
+
+        # Board Wells
+        totalScore -= self.wells   * 34
+
+
+        # totalScore -= self.bump    * 10
+        # totalScore -= self.height  * 20
 
         self.totalScore = totalScore
 
@@ -126,8 +156,28 @@ class AlphaNode:
         return str(self)
     # Used to Sort Scores
     def __lt__(self, other):
+        
         # TEMPORARY - SUBJECT TO CHANGE
-        return self.totalScore < other.totalScore
+        if self.totalScore < other.totalScore:
+            return True
+        elif self.totalScore > other.totalScore:
+            return False
+        # Equal, ish
+        else:
+            scol = 6 - self.move[1]
+            ocol = 6 - other.move[1]
+
+            if scol < 0:
+                scol *= -1
+                scol += 10
+            if ocol < 0:
+                ocol *= -1
+                ocol += 10
+            
+            return scol < ocol
+
+
+
 
 
 class AlphaTetris:
@@ -162,13 +212,14 @@ class AlphaTetris:
         if self.blockNum + depth > len(self.blockList):
             return
         block = self.blockList[self.blockNum + depth]
-
-        # print("depth:", depth, lastMove)
+        
         if lastMove is not None:
             board = copyBoard(lastMove.board)
             board = reverseBoard(board)
 
+
         if DEBUG and depth == 0:
+            # print("depth:", depth, lastMove)
             print("Last Move:", lastMove)
         
 
@@ -205,7 +256,7 @@ class AlphaTetris:
                 board = reverseBoard(board)
                 self.root = AlphaNode(self.blockList[self.blockNum - 1], board, la, md, True)
             else:
-                self.root = AlphaNode(0, board, 0, 0, True, emptyNode=True)
+                self.root = AlphaNode(0, board, (0, 0, 0), 0, True, emptyNode=True)
 
         self.newMove()
         self.blockNum += 2
@@ -223,7 +274,7 @@ class AlphaTetris:
         tempBoard = self.md.getBoard()
         if not self.isFirst:
             tempBoard = reverseBoard(tempBoard)
-        current = [AlphaNode(0, tempBoard, 0, 0, True, emptyNode=True) if self.root is None else self.root]
+        current = [AlphaNode(0, tempBoard, (0, 0, 0), 0, True, emptyNode=True) if self.root is None else self.root]
         for depth in range(self.runDepth):
             # Set proper First Move
             for move in current:
@@ -250,7 +301,7 @@ class Player:
         self.colRange = range(15)
         self.currentHoles = 0
 
-        self.brain = AlphaTetris(self.isFirst, 6)
+        self.brain = AlphaTetris(self.isFirst, 2)
 
     def output(self, matchData):
         # Redo Board with NUMPY
