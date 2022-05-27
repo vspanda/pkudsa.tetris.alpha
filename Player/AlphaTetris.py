@@ -1,3 +1,5 @@
+DEBUG = False
+
 def copyBoard(board):
     return list(map(list, board))
 
@@ -30,23 +32,23 @@ class AlphaNode:
 
     def getScoring(self):
         colRange = range(15)
-        def possibleScore(board, enemy = False):
-            score = 0
-            if not enemy:
-                full = 0
-                for line in range(10):
-                    if 0 in board[line]:
-                        continue
-                    full += 1
-                score += 2 ** (full - 2)
+        # def possibleScore(board, enemy = False):
+        #     score = 0
+        #     if not enemy:
+        #         full = 0
+        #         for line in range(10):
+        #             if 0 in board[line]:
+        #                 continue
+        #             full += 1
+        #         score += 2 ** (full - 2)
 
-            full = 0
-            for line in range(10, 15):
-                if 0 in board[line]:
-                    continue
-                full += 1
-            score += 2 ** (full - 1)
-            return score
+        #     full = 0
+        #     for line in range(10, 15):
+        #         if 0 in board[line]:
+        #             continue
+        #         full += 1
+        #     score += 2 ** (full - 1)
+        #     return score
         def holesFound(board):
             def checkColForHoles(col):
                 holes = []
@@ -75,22 +77,25 @@ class AlphaNode:
         
         self.md.putBlock(self.block, self.move, self.board)
         ch = getColumnHeights(self.board)
-        self.score = possibleScore(self.board)
-    
+        lines = self.md.removeLines(self.board)
+        
+        self.board = lines[0]
+        # self.score = 2 ** (lines[1] - 2) + 2 ** (lines[2] - 1)
+        self.score = lines[1] * 2 + lines[2]
         self.holes = holesFound(self.board)
         self.bump = bumpiness(ch)
         self.height = sum(ch)
 
         # Calculate Total Score
         totalScore = 0
-        totalScore += self.score   * 1000
+        totalScore += self.score   * 100000
 
         # Might Not have totalScore, instead just have Score
         # and use __lt__(self, other) to determine instead.
         # Will see.
-        totalScore -= self.holes   * 100
+        totalScore -= self.holes   * 300
         totalScore -= self.bump    * 100
-        totalScore -= self.height  * 100
+        totalScore -= self.height  * 200
 
         self.totalScore = totalScore
 
@@ -109,6 +114,7 @@ class AlphaNode:
     
     def addChild(self, child):
         self.paths[child.move] = child
+    
 
     def getMove(self):
         return self.move
@@ -147,7 +153,6 @@ class AlphaTetris:
         self.blockList = list(self.md.getBlockList())
         self.blockNum = 1 if self.isFirst else 2
     
-    # TODO Fix Enemy Move checking
     # Should be able to run recursively with depth and lastMove
     # Calculates all the moves in the currently available moveset
     # Need to check what happens when enemy moveset is empty -> Need to keep checking our moveset
@@ -163,8 +168,8 @@ class AlphaTetris:
             board = copyBoard(lastMove.board)
             board = reverseBoard(board)
 
-        if depth == 1:
-            print(lastMove)
+        if DEBUG and depth == 0:
+            print("Last Move:", lastMove)
         
 
         validMoves = self.md.getAllValidAction(block, board)
@@ -187,17 +192,21 @@ class AlphaTetris:
         self.md = md
         la = self.md.getLastAction()
 
+        if DEBUG:
+            print(la)
 
         if self.root and la in self.root.paths:
-            print(la, '\n', self.root.paths)
+            if DEBUG:
+                print(la, '\n', self.root.paths)
             self.root = self.root.paths[la]
         else:
             board = self.md.getBoard()
-            if not self.isFirst:
+            if la:
                 board = reverseBoard(board)
-            self.root = AlphaNode(0, board, 0, 0, True, emptyNode=True)
+                self.root = AlphaNode(self.blockList[self.blockNum - 1], board, la, md, True)
+            else:
+                self.root = AlphaNode(0, board, 0, 0, True, emptyNode=True)
 
-        print(self.root.isEnemy)
         self.newMove()
         self.blockNum += 2
 
@@ -211,8 +220,10 @@ class AlphaTetris:
     # TODO Fix
     # Recurses through the next self.runDepth moves
     def newMove(self):
-
-        current = [AlphaNode(0, self.md.getBoard(), 0, 0, True, emptyNode=True) if self.root is None else self.root]
+        tempBoard = self.md.getBoard()
+        if not self.isFirst:
+            tempBoard = reverseBoard(tempBoard)
+        current = [AlphaNode(0, tempBoard, 0, 0, True, emptyNode=True) if self.root is None else self.root]
         for depth in range(self.runDepth):
             # Set proper First Move
             for move in current:
@@ -239,7 +250,7 @@ class Player:
         self.colRange = range(15)
         self.currentHoles = 0
 
-        self.brain = AlphaTetris(self.isFirst, 2)
+        self.brain = AlphaTetris(self.isFirst, 6)
 
     def output(self, matchData):
         # Redo Board with NUMPY
@@ -254,7 +265,9 @@ class Player:
         
         move = max(self.brain.possibleMoves)
         self.brain.root = move
-        print(f"Player {1 if self.isFirst else 2}")
-        print(move)
-        printBoard(move.board)
+
+        if DEBUG:
+            print(f"Player {1 if self.isFirst else 2}")
+            print(move)
+            printBoard(move.board)
         return move.move
