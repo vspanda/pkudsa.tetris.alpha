@@ -109,6 +109,9 @@ class Player:
             columnHeights = getColumnHeights(testBoard)
 
             # 这些儿让调试组去调吧
+            scores = 0
+
+
             scores.append(
                 0
                 + 850 * linesFull(testBoard)
@@ -126,6 +129,7 @@ class Player:
             idx = [i for i, v in enumerate(scores) if v == max(scores)]
 
             idx = idx[0]
+            # [y, x, direction]
             self.currentHoles = holes[idx]
 
             # Debugging purposes

@@ -118,9 +118,12 @@ class AlphaNode:
 
     def __repr__(self) -> str:
         return str(self)
+
+    
     # Used to Sort Scores
     def __lt__(self, other):
         # TEMPORARY - SUBJECT TO CHANGE
+
         return self.totalScore < other.totalScore
 
 
@@ -173,7 +176,7 @@ class AlphaTetris:
             nextMoves.append(AlphaNode(block, tempBoard, move, self.md, isEnemy))
         
         if nextMoves == []:
-            nextMoves.append(AlphaNode(block, tempBoard, move, self.md, isEnemy))
+            nextMoves.append(AlphaNode(block, copyBoard(board, self.isFirst ^ isEnemy), move, self.md, isEnemy))
 
         return nextMoves
 
@@ -192,9 +195,9 @@ class AlphaTetris:
 
     # Recurses through the next self.runDepth moves
     def newMove(self):
+        current = [AlphaNode(0, self.md.getBoard(), 0, 0, 0, emptyNode=True) if self.root is None else self.root]
         for depth in range(self.runDepth):
             # Set proper First Move
-            current = [AlphaNode(0, self.md.getBoard(), 0, 0, 0, emptyNode=True)]
             for move in current:
                 temp = self.calculate(depth % 2 != 0, move, depth)
                 if move is not None:
@@ -232,6 +235,7 @@ class Player:
 
         self.brain.newMove()
         
-        move = max(self.brain.possibleMoves).move
+        move = max(self.brain.possibleMoves)
+        self.brain.root = move
         print(move)
-        return move
+        return move.move
