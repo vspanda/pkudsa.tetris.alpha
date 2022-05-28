@@ -99,25 +99,24 @@ class AlphaNode:
         # Calculate Total Score
         totalScore = 0
 
-
-
-        # Landing Height
-        totalScore -= (15 - self.move[0]) * 45
-
         # Removed Lines (NOT ERODED PIECES)
         totalScore += self.score   * 34
 
-        # Row Transitions
-        totalScore -= self.rTran   * 32
+        if not self.isEnemy:
+            # Landing Height
+            totalScore -= (15 - self.move[0]) * 45
 
-        # Col Transitions
-        totalScore -= self.cTran   * 93
+            # Row Transitions
+            totalScore -= self.rTran   * 32
 
-        # Buried Holes
-        totalScore -= self.holes   * 79
+            # Col Transitions
+            totalScore -= self.cTran   * 93
 
-        # Board Wells
-        totalScore -= self.wells   * 34
+            # Buried Holes
+            totalScore -= self.holes   * 79
+
+            # Board Wells
+            totalScore -= self.wells   * 34
 
 
         # totalScore -= self.bump    * 10
