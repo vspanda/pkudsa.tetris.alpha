@@ -5,14 +5,14 @@ Start Date: 2022.5.22
 ## References
 
 Alpha Heuristics:
-https://blog.csdn.net/qq_41882147/article/details/80005763
-https://imake.ninja/el-tetris-an-improvement-on-pierre-dellacheries-algorithm/
+- https://blog.csdn.net/qq_41882147/article/details/80005763
+- https://imake.ninja/el-tetris-an-improvement-on-pierre-dellacheries-algorithm/
 
 Delta and Omega Heuristics:
-https://codemyroad.wordpress.com/2013/04/14/tetris-ai-the-near-perfect-player/
+- https://codemyroad.wordpress.com/2013/04/14/tetris-ai-the-near-perfect-player/
 
 Board/Game Data
-https://github.com/pkulab409/pkudsa.tetris
+- https://github.com/pkulab409/pkudsa.tetris
 
 
 ## Heuristics Used
