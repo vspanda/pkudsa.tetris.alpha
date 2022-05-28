@@ -301,7 +301,7 @@ class Player:
         self.colRange = range(15)
         self.currentHoles = 0
 
-        self.brain = AlphaTetris(self.isFirst, 2)
+        self.brain = AlphaTetris(self.isFirst, 10)
 
     def output(self, matchData):
         # Redo Board with NUMPY
