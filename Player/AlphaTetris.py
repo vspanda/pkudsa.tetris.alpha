@@ -154,23 +154,28 @@ class AlphaNode:
     def __lt__(self, other):
         
         # TEMPORARY - SUBJECT TO CHANGE
-        if self.totalScore < other.totalScore:
+        if self.score < other.score:
             return True
-        elif self.totalScore > other.totalScore:
+        elif self.score > other.score:
             return False
-        # Equal, ish
         else:
-            scol = 6 - self.move[1]
-            ocol = 6 - other.move[1]
+            if self.totalScore < other.totalScore:
+                return True
+            elif self.totalScore > other.totalScore:
+                return False
+            # Equal, ish
+            else:
+                scol = 6 - self.move[1]
+                ocol = 6 - other.move[1]
 
-            if scol < 0:
-                scol *= -1
-                scol += 10
-            if ocol < 0:
-                ocol *= -1
-                ocol += 10
-            
-            return scol < ocol
+                if scol < 0:
+                    scol *= -1
+                    scol += 10
+                if ocol < 0:
+                    ocol *= -1
+                    ocol += 10
+                
+                return scol < ocol
 
 
 
@@ -302,7 +307,7 @@ class Player:
         self.colRange = range(15)
         self.currentHoles = 0
 
-        self.brain = AlphaTetris(self.isFirst, 2)
+        self.brain = AlphaTetris(self.isFirst, 12)
 
     def output(self, matchData):
         # Redo Board with NUMPY
