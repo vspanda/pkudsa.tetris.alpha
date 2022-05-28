@@ -106,7 +106,7 @@ class AlphaNode:
 
 
         # Landing Height
-        totalScore -= self.move[0] * 45
+        totalScore -= (15 - self.move[0]) * 45
 
         # Removed Lines (NOT ERODED PIECES)
         totalScore += self.score   * 34
