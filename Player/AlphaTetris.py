@@ -64,16 +64,13 @@ class AlphaNode:
                     holes += cHole
             return holes
         def boardWells(board):
-            SUM = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55]
+            SUM = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78, 91, 105]
             ws = 0
             for j in rowRange:
                 wells = 0
                 for i in colRange:
-                    try:
-                        if (j - 1 < 0 or board[i][j - 1] != 0) and (j + 1 >= 10 or board[i][j + 1] != 0):
-                            wells += 1
-                    except IndexError:
-                        print('h')
+                    if (j - 1 < 0 or board[i][j - 1] != 0) and (j + 1 >= 10 or board[i][j + 1] != 0):
+                        wells += 1
                     else:
                         ws += SUM[wells]
                         wells = 0
@@ -85,12 +82,11 @@ class AlphaNode:
         
         self.board = lines[0]
         self.score = 2 ** (lines[1] - 2) + 2 ** (lines[2] - 1)
-        # self.score = lines[1] * 2 + lines[2]
+        self.score += lines[1] + lines[2]
 
         self.rTran = rowTransitions(self.board)
         self.cTran = colTransitions(self.board)
         self.holes = holesFound(self.board)
-
         self.wells = boardWells(self.board)
 
 
@@ -232,6 +228,11 @@ class AlphaTetris:
             tempBoard = copyBoard(board)
             nextMoves.append(AlphaNode(block, tempBoard, move, self.md, isEnemy))
         
+        if nextMoves == [] and validMoves == []:
+            a = AlphaNode(block, board, (0, 0, 0), self.md, isEnemy, True)
+            a.totalScore = 999999999 if isEnemy else -999999999
+            nextMoves.append(a)
+
         if nextMoves == [] and validMoves != []:
             nextMoves.append(AlphaNode(block, board, validMoves[0], self.md, isEnemy))
 
@@ -301,7 +302,7 @@ class Player:
         self.colRange = range(15)
         self.currentHoles = 0
 
-        self.brain = AlphaTetris(self.isFirst, 10)
+        self.brain = AlphaTetris(self.isFirst, 2)
 
     def output(self, matchData):
         # Redo Board with NUMPY
