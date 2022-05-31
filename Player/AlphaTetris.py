@@ -110,7 +110,7 @@ class AlphaNode:
             totalScore -= self.rTran   * 32
 
             # Col Transitions
-            totalScore -= self.cTran   * 93
+            totalScore -= self.cTran   * 63
 
             # Buried Holes
             totalScore -= self.holes   * 79
@@ -129,7 +129,7 @@ class AlphaNode:
     def getFinalScore(self):
         current = self.paths
         while current != {}:
-            maxChild: self = max(current, key=lambda x: current[x])
+            maxChild: self = max(current, key=current.get)
             maxChild = current[maxChild]
             if maxChild.isEnemy:
                 self.totalScore -= maxChild.totalScore
@@ -175,9 +175,6 @@ class AlphaNode:
                     ocol += 10
                 
                 return scol < ocol
-
-
-
 
 
 class AlphaTetris:
